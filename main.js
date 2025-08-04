@@ -40,6 +40,37 @@ app.get('/ficha', async (req, res) => {
   }
 });
 
+// Nueva ruta para forzar descarga
+app.get('/descargar-ficha', async (req, res) => {
+  const { dni } = req.query;
+
+  if (!dni) {
+    return res.status(400).send('DNI requerido');
+  }
+
+  try {
+    const response = await axios.get(`https://generar-imagen-c4-production.up.railway.app/generar-ficha?dni=${dni}`);
+
+    if (response.data && response.data.url) {
+      const imageUrl = response.data.url;
+
+      const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+
+      res.set({
+        'Content-Type': 'image/jpeg',
+        'Content-Disposition': `attachment; filename="ficha_${dni}.jpg"`,
+      });
+
+      return res.send(imageResponse.data);
+    } else {
+      return res.status(500).send("❌ No se pudo generar la ficha");
+    }
+  } catch (error) {
+    console.error("❌ Error al descargar la ficha:", error.message);
+    return res.status(500).send("❌ Error interno");
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`✅ Servidor corriendo en el puerto ${PORT}`);
 });
